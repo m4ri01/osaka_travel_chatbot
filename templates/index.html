@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://unpkg.com/tailwindcss@1.9.6/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="h-screen overflow-hidden flex items-center justify-center" style="background: #edf2f7;">
+    <div class="flex h-screen antialiased text-gray-800">
+    <div class="flex flex-row h-full w-full overflow-x-hidden">
+      <div class="flex flex-col flex-auto h-full p-6">
+        <div
+          class="flex flex-col flex-auto flex-shrink-0 rounded-2xl bg-gray-100 h-full p-4"
+        >
+          <div class="flex flex-col h-full overflow-x-auto mb-4">
+            <div class="flex flex-col h-full">
+              <div class="grid grid-cols-12 gap-y-2" id="chat-place">
+                <div class="col-start-1 col-end-8 p-3 rounded-lg">
+                  <div class="flex flex-row items-center">
+                    <div
+                      class="flex items-center justify-center h-10 w-10 rounded-full bg-indigo-500 flex-shrink-0"
+                    >
+                      Bot
+                    </div>
+                    <div
+                      class="relative ml-3 text-sm bg-white py-2 px-4 shadow rounded-xl"
+                    >
+                      <div>Hello, I'm a chatbot. Ask me anything.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="flex flex-row items-center h-16 rounded-xl bg-white w-full px-4"
+          >
+            <div class="w-1/4 mr-2">
+              <select 
+                id="model-select" 
+                class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              >
+                <option value="llama" selected>Llama</option>
+                <option value="deepseek">DeepSeek</option>
+              </select>
+            </div>
+            <div class="flex-grow ml-2">
+              <div class="relative w-full">
+                {% csrf_token %}
+                <textarea
+                  class="flex w-full border rounded-xl focus:outline-none focus:border-indigo-300 pl-4 pt-2 pr-4 resize-none overflow-auto"
+                  placeholder="Your message..."
+                  id="message"
+                  onkeydown="handleKeyDown(event)"
+                  rows="1"
+                  style="min-height: 40px; max-height: 120px;"
+                ></textarea>
+              </div>
+            </div>
+            <div class="ml-4">
+              <button
+                class="flex items-center justify-center bg-indigo-500 hover:bg-indigo-600 rounded-xl text-white px-4 py-1 flex-shrink-0" onclick="sendMessage()" id="send-button"
+              >
+                <span>Send</span>
+                <span class="ml-2">
+                  <svg
+                    class="w-4 h-4 transform rotate-45 -mt-px"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                    ></path>
+                  </svg>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    let csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
+    let fetch_header = {
+        'Accept': 'application/json',
+        'X-CSRFToken': csrftoken,
+        'Content-Type': 'application/json'
+    }
+    let sequence = 0;
+    let isIdle = true;
+
+    function templateBot(sequence){
+      template = `
+      <div class="col-start-1 col-end-8 p-3 rounded-lg" id="bot-${sequence}">
+        <div class="flex flex-row items-center">
+          <div
+            class="flex items-center justify-center h-10 w-10 rounded-full bg-indigo-500 flex-shrink-0"
+          >
+            Bot
+          </div>
+          <div
+            class="relative ml-3 text-sm bg-white py-2 px-4 shadow rounded-xl"
+          >
+          <div id="bot-loading-${sequence}" class='flex space-x-2 justify-center items-center bg-white dark:invert'>
+              <div class='h-2 w-2 bg-indigo-900 rounded-full animate-bounce [animation-delay:-0.3s]'></div>
+            <div class='h-2 w-2 bg-indigo-900 rounded-full animate-bounce [animation-delay:-0.15s]'></div>
+            <div class='h-2 w-2 bg-indigo-900 rounded-full animate-bounce'></div>
+          </div>
+            <div id="bot-message-${sequence}" class="hidden"></div>
+          </div>
+        </div>
+      </div>
+      `
+      return template;
+    }
+    
+    function templateUser(sequence, message){
+      template = `
+      <div class="col-start-6 col-end-13 p-3 rounded-lg" id="user-${sequence}">
+        <div class="flex items-center justify-start flex-row-reverse">
+          <div
+            class="flex items-center justify-center h-10 w-10 rounded-full bg-green-500 flex-shrink-0"
+          >
+            Me
+          </div>
+          <div
+            class="relative mr-3 text-sm bg-indigo-100 py-2 px-4 shadow rounded-xl"
+          >
+            <div>${message}</div>
+          </div>
+        </div>
+      </div>
+      `
+      return template;
+    }
+    document.addEventListener('DOMContentLoaded',()=>{
+      sessionStorage.clear();
+
+      const textarea = document.getElementById('message');
+      textarea.addEventListener('input', autoResizeTextarea);
+    })
+
+    function handleKeyDown(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        // Prevent default to avoid adding a new line
+        event.preventDefault();
+        // Send the message
+        document.getElementById('send-button').click();
+      } else {
+        // setTimeout is needed to get the updated scrollHeight after the input
+        setTimeout(autoResizeTextarea, 0);
+      }
+    }
+
+    function autoResizeTextarea() {
+      const textarea = document.getElementById('message');
+      
+      // Reset height to auto to get the right scrollHeight
+      textarea.style.height = 'auto';
+      
+      // Set the height to match content (scrollHeight)
+      const newHeight = Math.min(120, Math.max(40, textarea.scrollHeight));
+      textarea.style.height = newHeight + 'px';
+    }
+
+    function sendMessage(){
+      chatPlace = document.getElementById('chat-place');
+      message = document.getElementById('message').value;
+
+      if(message == ''){
+        return;
+      }
+      
+      if (!isIdle){
+        return;
+      }
+
+      question = `Question: ${message}`;
+
+
+      chat_history = sessionStorage.getItem('chat_history');
+      if (chat_history == null){
+        chat_history = [];
+      }else{
+        chat_history = JSON.parse(chat_history).slice(-6);
+      }
+      
+
+      document.getElementById('message').value = '';
+
+      isIdle = false;
+      sequence += 1;
+      chatPlace.innerHTML += templateUser(sequence, message);
+      sequence += 1;
+      chatPlace.innerHTML += templateBot(sequence);
+      selected_model = document.getElementById('model-select').value
+
+      fetch('/generator',{
+        method: 'POST',
+        body: JSON.stringify({
+          query: message,
+          chat_history: chat_history,
+          model:selected_model
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        
+        botMessage = document.getElementById(`bot-message-${sequence}`);
+        botLoading = document.getElementById(`bot-loading-${sequence}`);
+        botLoading.classList.add('hidden');
+        botMessage.innerHTML = data.answer
+        .replace(/\n/g, "<br />")
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color: blue; text-decoration: underline;">$1</a>');
+        
+
+
+        if (!(data.answer.includes("I cannot answer "))){
+          chat_history.push({message:`${message}`});
+          chat_history.push({message:`${data.answer}`});
+        }
+
+
+        sessionStorage.setItem('chat_history', JSON.stringify(chat_history));
+
+        botMessage.classList.remove('hidden');
+        isIdle = true;
+        sessionStorage.setItem('chat_history', JSON.stringify(chat_history));
+      })
+
+    }
+
+
+  </script>
+</body>
+</html>
