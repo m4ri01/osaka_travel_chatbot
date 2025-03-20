@@ -13,17 +13,18 @@ Rewritten Query:
 """
 
 PARAPHRASER_JP="""
-Rewrite the question for search while keeping its meaning and key terms intact.
-If the conversation history is empty, DO NOT change the query.
-Use conversation history only if necessary, and avoid extending the query with your own knowledge.
-If no changes are needed, output the current question as is.
-Conversation history:
+検索用に質問を書き換え、意味と重要なキーワードを保持してください。
+会話履歴が空の場合、クエリを変更しないでください。
+会話履歴は必要な場合のみ使用し、自身の知識でクエリを拡張しないでください。
+変更が不要な場合は、現在の質問をそのまま出力してください。
+
+会話履歴:
 {% for memory in memories %}
     {{ memory }}
 {% endfor %}
 
-User Query: {{query}}
-Rewritten Query:
+ユーザーのクエリ: {{query}}
+書き換えたクエリ：
 """
 
 
