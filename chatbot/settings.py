@@ -32,7 +32,10 @@ MONGO_CONNECTION_STRING = env('MONGO_CONNECTION_STRING')
 OLLAMA = env('ollama')
 MODEL_DEEPSEEK = env('model_deepseek')
 MODEL_LLAMA = env('model_llama')
-
+URL= env("URL")
+API_KEY = env("API_KEY")
+LLAMAAPI_DEEPSEEK=env("LLAMAAPI_DEEPSEEK")
+LLAMAAPI_LLAMA=env("LLAMAAPI_LLAMA")
 # Application definition
 
 INSTALLED_APPS = [

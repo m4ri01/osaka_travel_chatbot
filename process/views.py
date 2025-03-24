@@ -6,6 +6,17 @@ from haystack.dataclasses import ChatMessage
 from django.views.decorators.csrf import csrf_exempt
 import json
 import re
+# import logging
+# from haystack import tracing
+# from haystack.tracing.logging_tracer import LoggingTracer
+
+# logging.basicConfig(format="%(levelname)s - %(name)s -  %(message)s", level=logging.WARNING)
+# logging.getLogger("haystack").setLevel(logging.DEBUG)
+
+# tracing.tracer.is_content_tracing_enabled = True # to enable tracing/logging content (inputs/outputs)
+# tracing.enable_tracing(LoggingTracer(tags_color_strings={"haystack.component.input": "\x1b[1;31m", "haystack.component.name": "\x1b[1;34m"}))
+
+
 
 def chatPage(request):
     return render(request,"index.html")
@@ -17,7 +28,7 @@ def generate_memories_str(memories):
     results = []
     
     for i in range(len(memories)//2) :
-        results.append(f"Question: {memories[i*2]}\n\nAnswer: {memories[i*2+1]}")
+        results.append(f"Question: {memories[i*2]['message']}\n\nAnswer: {memories[i*2+1]['message']}")
     return results
 
 def RAGJP(model,query, memory):
@@ -26,6 +37,12 @@ def RAGJP(model,query, memory):
     
     if model=="deepseek":
         pipeline = apps.get_app_config('process').deepseek_jp()
+
+    if model=="llama_api":
+        pipeline = apps.get_app_config("process").llama_api_jp()
+
+    if model=="deepseek_api":
+        pipeline = apps.get_app_config("process").deepseek_api_jp()
 
     memories_str = generate_memories_str(memory)
 
@@ -46,7 +63,7 @@ def RAGJP(model,query, memory):
             "memories":memories_str,
             "query":query
         },
-        "builder": {"query": query,"memories":memories_str,"template": messages}
+        "builder": {"memories":memories_str,"template": messages}
     })
     # print(response["llm"]["replies"][0]._content[0].text)
 
@@ -58,6 +75,12 @@ def RAG(model,query, memory):
     
     if model=="deepseek":
         pipeline = apps.get_app_config('process').deepseek()
+
+    if model=="llama_api":
+        pipeline = apps.get_app_config("process").llama_api()
+
+    if model=="deepseek_api":
+        pipeline = apps.get_app_config("process").deepseek_api()
 
     memories_str = generate_memories_str(memory)
 
@@ -78,7 +101,7 @@ def RAG(model,query, memory):
             "memories":memories_str,
             "query":query
         },
-        "builder": {"query": query,"memories":memories_str,"template": messages}
+        "builder": {"memories":memories_str,"template": messages}
     })
     # print(response["llm"]["replies"][0]._content[0].text)
 
