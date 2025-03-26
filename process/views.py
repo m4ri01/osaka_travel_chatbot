@@ -6,15 +6,15 @@ from haystack.dataclasses import ChatMessage
 from django.views.decorators.csrf import csrf_exempt
 import json
 import re
-# import logging
-# from haystack import tracing
-# from haystack.tracing.logging_tracer import LoggingTracer
+import logging
+from haystack import tracing
+from haystack.tracing.logging_tracer import LoggingTracer
 
-# logging.basicConfig(format="%(levelname)s - %(name)s -  %(message)s", level=logging.WARNING)
-# logging.getLogger("haystack").setLevel(logging.DEBUG)
+logging.basicConfig(format="%(levelname)s - %(name)s -  %(message)s", level=logging.WARNING)
+logging.getLogger("haystack").setLevel(logging.DEBUG)
 
-# tracing.tracer.is_content_tracing_enabled = True # to enable tracing/logging content (inputs/outputs)
-# tracing.enable_tracing(LoggingTracer(tags_color_strings={"haystack.component.input": "\x1b[1;31m", "haystack.component.name": "\x1b[1;34m"}))
+tracing.tracer.is_content_tracing_enabled = True # to enable tracing/logging content (inputs/outputs)
+tracing.enable_tracing(LoggingTracer(tags_color_strings={"haystack.component.input": "\x1b[1;31m", "haystack.component.name": "\x1b[1;34m"}))
 
 
 

@@ -28,7 +28,11 @@ class PipelineRAG(Pipeline):
             full_text_search_index="vector_index",
         )
 
-        retriever = MongoDBAtlasEmbeddingRetriever(document_store=document_store,top_k=10)
+        if provider == "ollama":
+            k=5
+        else:
+            k=10
+        retriever = MongoDBAtlasEmbeddingRetriever(document_store=document_store,top_k=k)
         if lang == "en":
             embedder = SentenceTransformersTextEmbedder()
         else:
